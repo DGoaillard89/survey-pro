@@ -1183,6 +1183,8 @@
       experience: 'Salman Antar is recorded as the risk assessor. The competence record should be verified and retained by DS Water Ltd, including relevant training, practical experience, continuing professional development, quality assurance and authorisation for hot and cold water risk assessment and reporting.' },
     // TODO: add Daniel's training certificates and experience.
     'Daniel Goaillard': { training: [], experience: '' },
+    // TODO: add Garvita's training certificates and experience.
+    'Garvita Kumar': { training: [], experience: '' },
   };
   const findStaff = name => {
     const k = Object.keys(STAFF).find(n => n.toLowerCase() === String(name || '').trim().toLowerCase());
@@ -1747,7 +1749,7 @@
     $('lockNote').className = 'lock-note' + (locked ? '' : state.status === 'Completed' ? ' qc' : ' hidden');
     if (locked) $('lockNote').textContent = `Signed off by ${state.signoff.qc?.name || 'QC'} on ${fmtWhen(state.signoff.qc?.at)}. The assessment is locked – re-open it from the Sign-off tab to make changes.`;
     else if (state.status === 'Completed') $('lockNote').textContent = `Signed by assessor ${state.signoff.assessor?.name || ''} on ${fmtWhen(state.signoff.assessor?.at)}. QC can review and edit before signing off.`;
-    $('reportBtn').textContent = locked ? 'Generate final report' : 'Generate draft report';
+    $('reportBtn').textContent = locked ? 'Generate final report' : 'Generate report';
   }
 
   // Finger / stylus signature pad.
@@ -1847,7 +1849,7 @@
     const iss = st === 'Signed off'
       ? `<button type="button" class="btn issue-btn" id="issueBtn">Generate final report (PDF)</button>
          ${issued.length ? `<p>Issued: ${issued.map(i => `${esc(fmtWhen(i.at))} by ${esc(i.by)}`).join('; ')}</p>` : ''}`
-      : `<p class="muted">The final report can be generated once QC has signed off. Until then, “Generate draft report” produces a copy marked <b>DRAFT</b>.</p>`;
+      : `<p class="muted">The final report can be generated once QC has signed off. Until then, “Generate report” produces a copy for review.</p>`;
 
     $('signoffView').innerHTML = `
       <section class="panel"><h2>1. Assessor sign-off</h2>${a}</section>
@@ -2577,6 +2579,7 @@
 
   function generateReport() {
     const final = state.status === 'Signed off';
+    const SHOW_DRAFT_MARK = false;   // DRAFT watermark switched off for now – set true to bring it back
     if (final) {
       state.issues ??= [];
       state.issues.push({ at: Date.now(), by: currentUser().name || '' });
@@ -2646,7 +2649,7 @@
 
     const sigCell = x => x?.sig ? `<img class="sig" src="${x.sig}">` : '';
     $('report').innerHTML = `
-      ${final ? '' : '<div class="draft-mark">DRAFT</div>'}
+      ${final || !SHOW_DRAFT_MARK ? '' : '<div class="draft-mark">DRAFT</div>'}
       <!-- ================= COVER ================= -->
       <div class="cover">
         <h1>Legionella Risk Assessment of<br>Domestic Water Services</h1>
@@ -2892,7 +2895,7 @@
       </tbody></table>`;
 
     const prevTitle = document.title;
-    document.title = fileStem() + (final ? '' : '_DRAFT');   // becomes the default PDF filename
+    document.title = fileStem() + (final || !SHOW_DRAFT_MARK ? '' : '_DRAFT');   // becomes the default PDF filename
     setTimeout(() => { window.print(); document.title = prevTitle; }, 300);  // small delay lets photos decode
   }
 
