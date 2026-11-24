@@ -134,6 +134,39 @@
   .add-btn span { font-size: 30px; line-height: 1; }
   .add-btn:active { transform: scale(.97); filter: brightness(.9); }
 
+  /* Add asset: location + tags */
+  .tag-grid { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; }
+  .tag-btn {
+    min-height: 60px; padding: 0 18px; border: 2px solid var(--accent); border-radius: 30px; background: #fff;
+    color: var(--accent); font-size: 17px; font-weight: 700; display: inline-flex; align-items: center; gap: 8px;
+  }
+  .tag-btn.on { background: var(--accent); color: #fff; }
+  .tag-grid.small .tag-btn { min-height: 48px; font-size: 15px; padding: 0 14px; }
+  .tag-first { background: #fff; color: var(--accent); border-radius: 6px; padding: 1px 6px; font-size: 12px; font-weight: 800; }
+  #newLoc { margin-bottom: 4px; }
+
+  /* Master asset list */
+  .tag-filter { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; margin-bottom: 14px; }
+  .tag-filter button {
+    flex: 0 0 auto; min-height: 52px; padding: 0 16px; border: 2px solid var(--brand); border-radius: 26px;
+    background: #fff; color: var(--brand); font-weight: 700; font-size: 16px;
+  }
+  .tag-filter button.on { background: var(--brand); color: #fff; }
+  .tag-filter button .n { opacity: .7; font-weight: 600; }
+  .row.collapsed { padding: 10px 14px; margin-bottom: 8px; }
+  .row.collapsed .row-head { margin-bottom: 0; }
+  .row-head[data-act="toggle"] { cursor: pointer; flex-wrap: wrap; min-height: 44px; }
+  .row-head .chev { font-size: 18px; color: var(--muted); width: 18px; transition: transform .15s; }
+  .row:not(.collapsed) .chev { transform: rotate(90deg); }
+  .row-head .row-id { flex: 0 0 auto; min-width: 96px; }
+  .row-loc { flex: 1 1 160px; font-size: 17px; color: var(--ink); min-width: 0; }
+  .row-loc:empty::before { content: 'No location yet'; color: var(--muted); font-style: italic; }
+  .row-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+  .tag-pill { background: #eef2f8; border-radius: 99px; padding: 3px 10px; font-size: 13px; font-weight: 700; color: var(--brand); }
+  .tag-block { border-top: 2px solid var(--line); margin-top: 16px; padding-top: 12px; }
+  .tag-block h3 { margin: 0 0 10px; font-size: 18px; }
+  .row-foot { display: flex; justify-content: flex-end; margin-top: 14px; }
+
   /* Summary */
   .summary { display: flex; flex-wrap: wrap; gap: 10px; }
   .chip { background: #eef2f8; border-radius: 10px; padding: 10px 14px; font-size: 16px; min-width: 110px; }
@@ -318,7 +351,25 @@
     @bottom-left { content: "Form WH025.Issue 1   24.08.21"; font: 8pt "Avenir Next", Avenir, Arial, sans-serif; }
     @bottom-right { content: "Page " counter(page) " of " counter(pages); font: 8pt "Avenir Next", Avenir, Arial, sans-serif; }
   }
+  /* Internal remedial actions document uses its own running header */
+  @page internal {
+    @top-center { content: "Remedial Actions – INTERNAL – not for issue to the client"; font: 700 9pt "Avenir Next", Avenir, Arial, sans-serif;
+                  color: #c00000; vertical-align: bottom; padding-bottom: 6mm; border-bottom: 0.75pt solid #000; }
+    @bottom-left { content: "DS Water – internal quoting document"; font: 8pt "Avenir Next", Avenir, Arial, sans-serif; }
+  }
   @media print {
+    #report.internal { page: internal; }
+    #report.internal h1 { font-size: 20pt; margin: 0 0 4pt; }
+    #report .int-flag { color: #c00000; font-weight: 700; margin-bottom: 10pt; }
+    #report .int-meta td { padding: 1pt 12pt 1pt 0; }
+    #report .int-sum { font-size: 10pt; margin: 6pt 0 10pt; }
+    #report td.num { width: 4%; text-align: center; }
+    #report td.ik { width: 18%; font-weight: 700; }
+    #report td.qty { width: 6%; text-align: center; font-weight: 700; font-size: 11pt; }
+    #report td.pri { width: 10%; }
+    #report .int-asset { break-inside: avoid; page-break-inside: avoid; margin-bottom: 10pt; }
+    #report .int-asset h3 { margin: 8pt 0 3pt; }
+    #report .int-photos img { height: 110pt; width: 32%; object-fit: cover; margin: 0 1% 4pt 0; border: 1px solid #000; }
     body { background: #fff; font-size: 10pt; font-family: "Avenir Next", Avenir, "Nunito Sans", Arial, Helvetica, sans-serif; line-height: 1.3; }
     #login, #app { display: none !important; }
     #report { display: block; color: #000; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
@@ -487,7 +538,12 @@
     <div id="view-assets" class="hidden">
       <section class="panel">
         <h2>Add asset</h2>
-        <div class="add-grid" id="addButtons"></div>
+        <label for="newLoc">Location</label>
+        <input id="newLoc" type="text" placeholder="e.g. 2nd floor gents WC – wash hand basin">
+        <div class="quick-label">Tags</div>
+        <p class="hint-line">Tap every tag that applies – e.g. Sentinel outlet + Deadleg on the same outlet. The first tag you tap sets the asset ID.</p>
+        <div class="tag-grid" id="addButtons"></div>
+        <button type="button" class="btn block" id="addAssetBtn" disabled>Pick at least one tag</button>
       </section>
       <section class="panel">
         <h2>Summary</h2>
@@ -498,7 +554,12 @@
         <p class="hint-line">Readings and observations outside specification, one line per asset. Tap to jump to the asset.</p>
         <div id="faultLog"></div>
       </section>
-      <div id="assetSections"></div>
+      <section class="panel">
+        <h2>Asset list <span class="count fault-total zero" id="assetCount">0</span></h2>
+        <p class="hint-line">Every asset on the site. Filter by tag to see each register; tap an asset to open it.</p>
+        <div class="tag-filter" id="tagFilter"></div>
+        <div id="assetSections"></div>
+      </section>
       <section class="panel" style="display:flex;justify-content:flex-end">
         <button class="btn" data-goto="signoff">Next: Sign-off →</button>
       </section>
@@ -510,7 +571,9 @@
 
     <section class="panel">
       <div class="actions-bar">
-        <button class="btn" id="reportBtn">Generate draft report</button>
+        <button class="btn" id="reportBtn">Generate report</button>
+        <button class="btn secondary" id="remedialBtn">Remedial actions (internal PDF)</button>
+        <button class="btn secondary" id="remedialCsvBtn">Remedial actions spreadsheet</button>
         <button class="btn secondary" id="exportBtn">Export JSON</button>
         <button class="btn secondary" id="backBtn2">‹ Back to assessments</button>
       </div>
@@ -1115,13 +1178,56 @@
       ] },
   ];
   const TYPE = Object.fromEntries(ASSET_TYPES.map(t => [t.key, t]));
+
+  // ---- Tags: one asset can carry several types (e.g. a sentinel outlet that is also a deadleg) ----
+  // a.tags lists the types; a.type mirrors the first tag (it sets the ID prefix, and older versions of the app read it).
+  // Checks defined identically on several types are shared – e.g. "Hot °C (1 min)" on a sentinel and a
+  // little-used outlet is entered once. Keys that mean different things on different types (temp1 is
+  // "Hot supply" on a TMV but "Initial temp" on an outside tap) are kept separately for the extra tags.
+  const SPLIT = (() => {
+    const m = {};
+    for (const t of ASSET_TYPES) for (const f of t.fields) (m[f.key] ??= new Set()).add(JSON.stringify(f));
+    return new Set(Object.keys(m).filter(k => m[k].size > 1));
+  })();
+  const tagsOf = a => a.tags?.length ? a.tags : [a.type];
+  const hasTag = (a, tk) => tagsOf(a).includes(tk);
+  const ownSlot = (a, tk, k) => SPLIT.has(k) && tk !== tagsOf(a)[0];
+  const fv = (a, tk, k) => (ownSlot(a, tk, k) ? a.f?.[tk]?.[k] : a[k]) ?? '';
+  function setFv(a, tk, k, v) {
+    if (ownSlot(a, tk, k)) ((a.f ??= {})[tk] ??= {})[k] = v;
+    else a[k] = v;
+  }
+  const tagLabels = a => tagsOf(a).map(tk => TYPE[tk].label).join(' + ');
+  function addTag(a, tk) {
+    a.tags = [...tagsOf(a), tk]; a.type = a.tags[0];
+    const c = TYPE[tk].comment;
+    if (c && !(a.comments || '').includes(c)) a.comments = (a.comments || '').trim() ? a.comments.trim() + '\n\n' + c : c;
+  }
+  function removeTag(a, tk) {
+    const tags = tagsOf(a);
+    if (tk === tags[0] && tags[1]) {
+      // The next tag becomes the main one: its own copies of split checks move into the main slots.
+      const next = tags[1];
+      for (const f of TYPE[next].fields) if (SPLIT.has(f.key)) a[f.key] = a.f?.[next]?.[f.key] ?? '';
+      if (a.f) delete a.f[next];
+    }
+    if (a.f) delete a.f[tk];
+    a.tags = tags.filter(x => x !== tk); a.type = a.tags[0];
+    const c = TYPE[tk].comment;
+    if (c && a.comments) a.comments = a.comments.replace(c, '').replace(/\n{3,}/g, '\n\n').trim();
+  }
+  // True when the tag holds readings no other tag on the asset shares (so removing it loses them).
+  function tagHasData(a, tk) {
+    const sharedWithOther = f => !SPLIT.has(f.key) && tagsOf(a).some(o => o !== tk && TYPE[o].fields.some(g => g.key === f.key));
+    return TYPE[tk].fields.some(f => fv(a, tk, f.key) !== '' && !sharedWithOther(f));
+  }
   const STATUSES = ['pass', 'fail', 'monitor'];
   const CONDITIONS = ['Good', 'Fair', 'Poor'];
   const RISKS = ['Low', 'Medium', 'High'];
 
   // ---- Monitoring / control regime (report section 7) ----
   // Each task is included when `when` is true for the assets / answers recorded.
-  const has = type => state.assets.some(a => a.type === type);
+  const has = type => state.assets.some(a => hasTag(a, type));
   const MONITORING = [
     { freq: 'Weekly', service: 'Distribution system',
       when: () => has('deadleg') || has('littleUsed') || has('outsideTap') || state.survey.littleUsed === 'Yes',
@@ -1155,7 +1261,7 @@
     { freq: 'Annually – or as required', service: 'Hot and cold services', when: () => true,
       task: 'Review risk assessment and schematic drawing. Update as required.' },
   ];
-  const ids = type => state.assets.filter(a => a.type === type).map(a => a.id).join(', ');
+  const ids = type => state.assets.filter(a => hasTag(a, type)).map(a => a.id).join(', ');
 
   // ---- Staff competency library (report Appendix 3) ----
   // Matched by name to "Report by" (assessor) and "Checked by" (QC). Add new staff here.
@@ -1211,7 +1317,7 @@
     history: [],                 // [{ at, by, text }] – audit trail shown on the Sign-off tab
     qcEditors: [],               // names of people who edited while awaiting QC
     counters: {},                // per-type ID counters, never reused after delete
-    assets: [],                  // { id, type, location, condition, status, comments, actions: [{text, priority}], photos, ...type fields }
+    assets: [],                  // { id, tags, type (= first tag), location, condition, status, comments, actions: [{text, priority}], photos, ...type fields }
   });
 
   // Upgrade data saved by earlier versions of the app.
@@ -1226,7 +1332,8 @@
     }
     const old = { yes: 'Yes', no: 'No', na: 'N/A' };
     for (const k in s.survey) if (old[s.survey[k]]) s.survey[k] = old[s.survey[k]];
-    s.assets = s.assets.filter(a => TYPE[a.type]);
+    s.assets.forEach(a => { a.tags = (a.tags?.length ? a.tags : [a.type]).filter(tk => TYPE[tk]); a.type = a.tags[0]; });
+    s.assets = s.assets.filter(a => a.tags.length);
     s.assets.forEach(a => {
       a.photos ??= []; a.comments ??= '';
       if (!Array.isArray(a.actions)) {   // older versions had one remedial text box + priority
@@ -1561,15 +1668,20 @@
   };
   // All faults on one asset: out-of-spec readings, non-compliant answers, poor condition.
   function assetFaults(a) {
-    const t = TYPE[a.type], out = [];
-    if (t.alwaysFault) out.push({ item: t.label, value: 'Present', req: t.alwaysFault });
-    for (const f of t.fields) {
-      const r = fieldFault(f, a[f.key]);
-      if (r) out.push({ item: shortLabel(f.label), value: a[f.key] + (f.type === 'number' ? unitOf(f) : ''),
-                        spec: f.type === 'number' ? r.replace(/^should be /, '') : '', req: r });
+    const out = [], seen = new Set();
+    for (const tk of tagsOf(a)) {
+      const t = TYPE[tk];
+      if (t.alwaysFault) out.push({ item: t.label, value: 'Present', req: t.alwaysFault });
+      for (const f of t.fields) {
+        if (!SPLIT.has(f.key)) { if (seen.has(f.key)) continue; seen.add(f.key); }   // shared check – count once
+        const v = fv(a, tk, f.key), r = fieldFault(f, v);
+        if (r) out.push({ item: shortLabel(f.label), value: v + (f.type === 'number' ? unitOf(f) : ''),
+                          spec: f.type === 'number' ? r.replace(/^should be /, '') : '', req: r });
+      }
     }
-    if (a.type === 'tank' && a.temp1 !== '' && a.temp2 !== '' && !isNaN(+a.temp1) && !isNaN(+a.temp2) && +a.temp1 - +a.temp2 > 2)
-      out.push({ item: 'Stored vs incoming', value: `+${(+a.temp1 - +a.temp2).toFixed(1)} °C`, spec: '≤2 °C', req: 'stored water should be within 2 °C of incoming mains' });
+    const t1 = fv(a, 'tank', 'temp1'), t2 = fv(a, 'tank', 'temp2');
+    if (hasTag(a, 'tank') && t1 !== '' && t2 !== '' && !isNaN(+t1) && !isNaN(+t2) && +t1 - +t2 > 2)
+      out.push({ item: 'Stored vs incoming', value: `+${(+t1 - +t2).toFixed(1)} °C`, spec: '≤2 °C', req: 'stored water should be within 2 °C of incoming mains' });
     if (a.condition === 'Poor') out.push({ item: 'Condition', value: 'Poor', req: 'should be in good condition' });
     return out;
   }
@@ -1578,7 +1690,7 @@
     const list = [];
     const mt = state.survey.mainsTemp;
     if (fieldFault(QBY.mainsTemp, mt)) list.push({ id: 'MAINS', type: 'Incoming mains', location: state.survey.msvLocation || '', item: 'Incoming mains temp', value: mt + ' °C', spec: '<20 °C', req: fieldFault(QBY.mainsTemp, mt) });
-    for (const a of state.assets) for (const f of assetFaults(a)) list.push({ id: a.id, type: TYPE[a.type].label, location: a.location, ...f });
+    for (const a of state.assets) for (const f of assetFaults(a)) list.push({ id: a.id, type: tagLabels(a), location: a.location, ...f });
     return list;
   }
 
@@ -2056,7 +2168,7 @@
   // ---- Answers filled in automatically from the asset log ----
   // Each rule returns the answer the asset log implies, or null if the asset log can't tell.
   // Auto answers update as assets change; once the assessor taps an answer themselves, theirs is kept.
-  const typed = (type, key) => state.assets.filter(a => a.type === type).map(a => a[key]).filter(v => v !== '' && v != null);
+  const typed = (type, key) => state.assets.filter(a => hasTag(a, type)).map(a => fv(a, type, key)).filter(v => v !== '' && v != null);
   const allOrAny = (vals, ok) => !vals.length ? null : vals.every(ok) ? 'Yes' : 'No';
   const hotTemps = () => [...typed('sentinel', 'hot'), ...typed('littleUsed', 'hot'), ...typed('pou', 'outlet')].map(Number);
   const AUTO_RULES = {
@@ -2175,26 +2287,45 @@
   // =====================================================================
   // ASSET LOG
   // =====================================================================
-  $('addButtons').innerHTML = ASSET_TYPES.map(t =>
-    `<button class="add-btn" data-add="${t.key}"><span>+</span>${esc(t.label)}</button>`).join('');
-
+  // Add asset: type the location, tap every tag that applies, then Add.
+  let newTags = [];
+  function renderAddBar() {
+    $('addButtons').innerHTML = ASSET_TYPES.map(t => {
+      const i = newTags.indexOf(t.key);
+      return `<button type="button" class="tag-btn${i >= 0 ? ' on' : ''}" data-newtag="${t.key}">${i === 0 ? `<span class="tag-first">${esc(t.prefix)}</span>` : ''}${esc(t.label)}</button>`;
+    }).join('');
+    $('addAssetBtn').disabled = !newTags.length;
+    $('addAssetBtn').textContent = newTags.length ? `+ Add ${newTags.map(k => TYPE[k].label).join(' + ')}` : 'Pick at least one tag';
+  }
   $('addButtons').addEventListener('click', e => {
-    const btn = e.target.closest('[data-add]');
+    const btn = e.target.closest('[data-newtag]');
     if (!btn) return;
-    const t = TYPE[btn.dataset.add];
+    const k = btn.dataset.newtag;
+    newTags = newTags.includes(k) ? newTags.filter(x => x !== k) : [...newTags, k];
+    renderAddBar();
+  });
+  $('addAssetBtn').addEventListener('click', () => {
+    if (!newTags.length) return;
+    const t = TYPE[newTags[0]];
     const n = (state.counters[t.key] || 0) + 1;
     state.counters[t.key] = n;
     const asset = {
-      id: `${t.prefix}-${String(n).padStart(3, '0')}`, type: t.key,
-      location: '', condition: '', status: '', comments: t.comment, actions: [], photos: [],
+      id: `${t.prefix}-${String(n).padStart(3, '0')}`, tags: [t.key], type: t.key,
+      location: $('newLoc').value.trim(), condition: '', status: '', comments: t.comment || '', actions: [], photos: [],
     };
-    t.fields.forEach(f => { asset[f.key] = ''; });
+    newTags.slice(1).forEach(k => addTag(asset, k));
     state.assets.push(asset);
+    const photoFirst = newTags.some(k => TYPE[k].photoFirst);
+    if (tagFilter !== 'All' && !newTags.includes(tagFilter)) tagFilter = 'All';
+    openAssets.add(asset.id);
+    newTags = []; $('newLoc').value = '';
     save();
-    renderAssets();
-    document.querySelector(`.row[data-id="${asset.id}"]`).scrollIntoView({ behavior: 'smooth', block: 'center' });
-    if (t.photoFirst) pickPhoto({ kind: 'asset', id: asset.id });   // e.g. deadleg: photo straight away
+    renderAddBar(); renderAssets();
+    document.querySelector(`.row[data-id="${asset.id}"]`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    if (photoFirst) pickPhoto({ kind: 'asset', id: asset.id });   // e.g. deadleg: photo straight away
   });
+  $('newLoc').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); $('addAssetBtn').click(); } });
+  renderAddBar();
 
   function renderAssets() {
     renderSummary();
@@ -2206,7 +2337,7 @@
   function renderSummary() {
     const used = ASSET_TYPES.filter(t => has(t.key));
     const byType = used.map(t =>
-      `<div class="chip"><b>${state.assets.filter(a => a.type === t.key).length}</b>${esc(t.label)}</div>`).join('');
+      `<div class="chip"><b>${state.assets.filter(a => hasTag(a, t.key)).length}</b>${esc(t.label)}</div>`).join('');
     const byStatus = [...STATUSES, ''].map(s =>
       `<div class="chip ${s}"><b>${state.assets.filter(a => a.status === s).length}</b>${s ? cap(s) : 'Not set'}</div>`).join('');
     const acts = state.assets.flatMap(a => a.actions);
@@ -2218,16 +2349,27 @@
        <div class="summary-title">Remedial actions: ${acts.length}</div><div class="summary">${byPri}</div>`;
   }
 
+  // Master asset list: every asset in one list, filtered by tag to show each register.
+  let tagFilter = 'All';
+  const openAssets = new Set();   // asset cards currently expanded (this session only)
   function renderSections() {
     const used = ASSET_TYPES.filter(t => has(t.key));
-    $('assetSections').innerHTML = used.length ? used.map(t => {
-      const rows = state.assets.filter(a => a.type === t.key);
-      return `<section class="panel asset-section">
-        <h2>${esc(t.label)} <span class="count">${rows.length}</span></h2>
-        ${rows.map(rowHTML).join('')}
-      </section>`;
-    }).join('') : '<section class="panel"><p class="empty">No assets logged yet – use the buttons above.</p></section>';
+    if (tagFilter !== 'All' && !has(tagFilter)) tagFilter = 'All';
+    $('assetCount').textContent = state.assets.length;
+    $('assetCount').classList.toggle('zero', !state.assets.length);
+    $('tagFilter').innerHTML = state.assets.length ? [['All', 'All assets', state.assets.length],
+      ...used.map(t => [t.key, t.label, state.assets.filter(a => hasTag(a, t.key)).length])].map(([k, label, n]) =>
+      `<button type="button" data-filter="${k}" class="${tagFilter === k ? 'on' : ''}">${esc(label)} <span class="n">${n}</span></button>`).join('') : '';
+    const rows = state.assets.filter(a => tagFilter === 'All' || hasTag(a, tagFilter));
+    $('assetSections').innerHTML = rows.length ? rows.map(rowHTML).join('')
+      : '<p class="empty">No assets logged yet – add the first one above.</p>';
   }
+  $('tagFilter').addEventListener('click', e => {
+    const b = e.target.closest('[data-filter]');
+    if (!b) return;
+    tagFilter = b.dataset.filter;
+    renderSections();
+  });
 
   // Re-draw just one asset card (keeps the page where it is).
   function rerenderRow(a) {
@@ -2235,26 +2377,27 @@
     if (el) el.outerHTML = rowHTML(a);
   }
 
-  function fieldHTML(a, f) {
-    const id = `${a.id}-${f.key}`;
-    const v = a[f.key] ?? '';
+  function fieldHTML(a, f, tk) {
+    const id = `${a.id}-${tk}-${f.key}`;
+    const v = fv(a, tk, f.key);
     let input;
     if (f.type === 'select') {
-      input = `<select id="${id}" data-field="${f.key}" class="${isOut(f, v) ? 'out' : ''}"><option value="">— select —</option>
+      input = `<select id="${id}" data-field="${f.key}" data-tag="${tk}" class="${isOut(f, v) ? 'out' : ''}"><option value="">— select —</option>
         ${f.options.map(o => `<option ${v === o ? 'selected' : ''}>${esc(o)}</option>`).join('')}</select>`;
     } else if (f.type === 'number') {
-      input = `<input id="${id}" type="number" inputmode="decimal" step="0.1" data-field="${f.key}"${rangeAttrs(f)}
+      input = `<input id="${id}" type="number" inputmode="decimal" step="0.1" data-field="${f.key}" data-tag="${tk}"${rangeAttrs(f)}
         class="${isOut(f, v) ? 'out' : ''}" value="${esc(v)}">`;
     } else {
-      input = `<input id="${id}" type="${f.type}" data-field="${f.key}"${f.list ? ` list="${f.list}"` : ''} class="${isOut(f, v) ? 'out' : ''}" value="${esc(v)}">`;
+      input = `<input id="${id}" type="${f.type}" data-field="${f.key}" data-tag="${tk}"${f.list ? ` list="${f.list}"` : ''} class="${isOut(f, v) ? 'out' : ''}" value="${esc(v)}">`;
     }
     return `<div><label for="${id}">${esc(f.label)}${targetText(f)}</label>${input}</div>`;
   }
 
   function actionsHTML(a) {
-    const t = TYPE[a.type];
     const used = new Set(a.actions.map(x => x.text));
-    const quick = [...(t.actions || []), ...COMMON_ACTIONS];
+    const quick = [];
+    for (const [text, pri] of [...tagsOf(a).flatMap(tk => TYPE[tk].actions || []), ...COMMON_ACTIONS])
+      if (!quick.some(([t]) => t === text)) quick.push([text, pri]);
     return `<div class="full actions-box">
       <label>Remedial actions <span class="hint">– each one goes into section 7 of the report</span></label>
       ${a.actions.length ? a.actions.map((x, i) => `
@@ -2299,26 +2442,47 @@
     const b = e.target.closest('[data-goto-asset]');
     if (!b) return;
     if (b.dataset.gotoAsset === 'MAINS') { showTab('survey'); document.querySelector('[data-sq="mainsTemp"]')?.scrollIntoView({ block: 'center' }); return; }
-    const row = document.querySelector(`.row[data-id="${b.dataset.gotoAsset}"]`);
+    const id = b.dataset.gotoAsset;
+    openAssets.add(id);
+    const a = findAsset(id);
+    if (a && tagFilter !== 'All' && !hasTag(a, tagFilter)) tagFilter = 'All';
+    renderSections();
+    const row = document.querySelector(`.row[data-id="${id}"]`);
     row?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     row?.classList.add('flash'); setTimeout(() => row?.classList.remove('flash'), 1500);
   });
 
   function rowHTML(a) {
-    const t = TYPE[a.type];
     const fid = f => `${a.id}-${f}`;
-    return `<div class="row" data-id="${esc(a.id)}" data-status="${esc(a.status)}">
-      <div class="row-head">
+    const open = openAssets.has(a.id);
+    const head = `<div class="row-head" data-act="toggle">
+        <span class="chev">▸</span>
         <div class="row-id">${esc(a.id)}</div>
+        <div class="row-loc">${esc(a.location)}</div>
+        <div class="row-tags">${tagsOf(a).map(tk => `<span class="tag-pill">${esc(TYPE[tk].label)}</span>`).join('')}</div>
         <span class="fault-count" data-faults>${faultBadge(a)}</span>
         ${a.actions.length ? `<span class="act-count">${a.actions.length} action${a.actions.length > 1 ? 's' : ''}</span>` : ''}
-        <button class="btn danger" data-act="delete">Delete</button>
-      </div>
-      <details class="req"><summary>Requirements</summary>${esc(t.req || '')}</details>
+      </div>`;
+    if (!open) return `<div class="row collapsed" data-id="${esc(a.id)}" data-status="${esc(a.status)}">${head}</div>`;
+    // One block of checks per tag; a check shared by two tags is shown once, under the first.
+    const shown = new Set();
+    const blocks = tagsOf(a).map(tk => {
+      const t = TYPE[tk];
+      const fields = t.fields.filter(f => SPLIT.has(f.key) || !shown.has(f.key));
+      fields.forEach(f => shown.add(f.key));
+      return `<div class="tag-block"><h3>${esc(t.label)} checks</h3>
+        <details class="req"><summary>Requirements</summary>${esc(t.req || '')}</details>
+        ${fields.length ? `<div class="grid">${fields.map(f => fieldHTML(a, f, tk)).join('')}</div>` : '<p class="empty">Uses the same checks as above.</p>'}
+      </div>`;
+    }).join('');
+    return `<div class="row" data-id="${esc(a.id)}" data-status="${esc(a.status)}">
+      ${head}
+      <div class="quick-label">Tags <span class="hint">– tap to add or remove</span></div>
+      <div class="tag-grid small">${ASSET_TYPES.map(t =>
+        `<button type="button" class="tag-btn${hasTag(a, t.key) ? ' on' : ''}" data-tag-toggle="${t.key}">${esc(t.label)}</button>`).join('')}</div>
       <div class="grid">
         <div class="full"><label for="${fid('loc')}">Location</label>
           <input id="${fid('loc')}" type="text" data-field="location" value="${esc(a.location)}" placeholder="e.g. Basement tank room"></div>
-        ${t.fields.map(f => fieldHTML(a, f)).join('')}
         <div><label for="${fid('cond')}">Condition</label>
           <select id="${fid('cond')}" data-field="condition" class="${a.condition === 'Poor' ? 'out' : ''}">
             <option value="">— select —</option>
@@ -2329,11 +2493,15 @@
             <option value="">— select —</option>
             ${STATUSES.map(s => `<option value="${s}" ${a.status === s ? 'selected' : ''}>${cap(s)}</option>`).join('')}
           </select></div>
+      </div>
+      ${blocks}
+      <div class="grid tag-block">
         <div class="full"><label for="${fid('com')}">Comments</label>
           <textarea id="${fid('com')}" data-field="comments">${esc(a.comments)}</textarea></div>
         ${actionsHTML(a)}
         <div class="full"><label>Photos</label>${photosHTML(a.photos, 'addphoto')}</div>
       </div>
+      <div class="row-foot"><button type="button" class="btn danger" data-act="delete">Delete ${esc(a.id)}</button></div>
     </div>`;
   }
 
@@ -2349,18 +2517,20 @@
       save();
       return;
     }
-    const f = e.target.dataset.field;
+    const f = e.target.dataset.field, tk = e.target.dataset.tag;
     if (!f) return;
-    a[f] = e.target.value;
-    const fd = f === 'condition' ? { bad: ['Poor'] } : TYPE[a.type].fields.find(x => x.key === f);
+    if (tk) setFv(a, tk, f, e.target.value);
+    else a[f] = e.target.value;
+    if (f === 'location') row.querySelector('.row-loc').textContent = a.location;
+    const fd = f === 'condition' ? { bad: ['Poor'] } : tk ? TYPE[tk].fields.find(x => x.key === f) : null;
     if (fd) flagInput(e.target, fd);
     updateFaultBadge(row, a); renderFaults();
     if (f === 'status') {
       row.dataset.status = a.status;
       e.target.className = 'status ' + a.status;
-      // Fail / Monitor with no actions yet: add the generic remedial wording for this asset type.
+      // Fail / Monitor with no actions yet: add the generic remedial wording for each of the asset's tags.
       if ((a.status === 'fail' || a.status === 'monitor') && !a.actions.length) {
-        a.actions.push({ text: TYPE[a.type].remedial, priority: a.status === 'fail' ? 'Medium' : 'Low' });
+        for (const tk of tagsOf(a)) if (TYPE[tk].remedial) a.actions.push({ text: TYPE[tk].remedial, priority: a.status === 'fail' ? 'Medium' : 'Low' });
         rerenderRow(a);
       }
       renderSummary();
@@ -2372,6 +2542,19 @@
     const row = e.target.closest('.row');
     if (!row) return;
     const a = findAsset(row.dataset.id);
+
+    // Add / remove a tag on this asset.
+    const tg = e.target.closest('[data-tag-toggle]');
+    if (tg) {
+      const tk = tg.dataset.tagToggle;
+      if (hasTag(a, tk)) {
+        if (tagsOf(a).length === 1) return alert('An asset needs at least one tag. Add the new tag first, or delete the asset.');
+        if (tagHasData(a, tk) && !confirm(`Remove the ${TYPE[tk].label} tag from ${a.id}? Its ${TYPE[tk].label.toLowerCase()} readings will be cleared.`)) return;
+        removeTag(a, tk);
+      } else addTag(a, tk);
+      save(); renderAssets();   // tag counts, filter chips, faults and this card all change
+      return;
+    }
 
     // Quick-add a standard remedial action (tap again to remove it).
     const q = e.target.closest('[data-quick]');
@@ -2393,9 +2576,14 @@
     const btn = e.target.closest('[data-act]');
     if (!btn) return;
     switch (btn.dataset.act) {
+      case 'toggle':
+        if (openAssets.has(a.id)) openAssets.delete(a.id); else openAssets.add(a.id);
+        rerenderRow(a);
+        break;
       case 'delete':
         if (confirm(`Delete ${a.id}? This cannot be undone.`)) {
           state.assets = state.assets.filter(x => x !== a);
+          openAssets.delete(a.id);
           save(); renderAssets();
         }
         break;
@@ -2527,13 +2715,16 @@
   }
 
   function assetTable(t) {
-    let list = state.assets.filter(a => a.type === t.key);
-    const val = (f, a) => isOut(f, a[f.key]) ? `<span class="out">${esc(a[f.key])}</span>` : esc(a[f.key]);
+    let list = state.assets.filter(a => hasTag(a, t.key));
+    const val = (f, a) => { const v = fv(a, t.key, f.key); return isOut(f, v) ? `<span class="out">${esc(v)}</span>` : esc(v); };
+    // Cross-reference: the same asset appears in the register of each of its other tags.
+    const also = a => tagsOf(a).filter(tk => tk !== t.key).map(tk => TYPE[tk].label).join(', ');
     if (t.vertical) {
       return list.map(a => `
         <table class="kv"><tbody>
           <tr><td class="k">${t.key === 'tank' ? 'Tank asset number' : t.key === 'calorifier' ? 'Vessel asset number' : 'Asset number'}</td><td class="c"><b>${esc(a.id)}</b></td></tr>
           <tr><td class="k">Location</td><td class="c">${esc(a.location)}</td></tr>
+          ${also(a) ? `<tr><td class="k">Also recorded as</td><td class="c">${esc(also(a))}</td></tr>` : ''}
           ${t.fields.map(f => `<tr><td class="k">${esc(f.label)}</td><td class="c">${val(f, a)}</td></tr>`).join('')}
           <tr><td class="k">Condition</td><td class="c">${esc(a.condition)}</td></tr>
         </tbody></table>
@@ -2542,13 +2733,14 @@
     const fields = t.fields.filter(f => f.key !== t.groupBy);
     const cols = fields.length + 3;
     let body = '', group = null;
-    if (t.groupBy) list = [...list].sort((x, y) => String(x[t.groupBy] || '').localeCompare(String(y[t.groupBy] || '')));
+    const grp = a => String(fv(a, t.key, t.groupBy));
+    if (t.groupBy) list = [...list].sort((x, y) => grp(x).localeCompare(grp(y)));
     for (const a of list) {
-      if (t.groupBy && (a[t.groupBy] || '') !== group) {
-        group = a[t.groupBy] || '';
+      if (t.groupBy && grp(a) !== group) {
+        group = grp(a);
         body += `<tr><td colspan="${cols}" class="grp">${esc(group || state.survey.site || 'Site')}</td></tr>`;
       }
-      body += `<tr><td>${esc(a.id)}${a.location ? ' / ' + esc(a.location) : ''}</td>
+      body += `<tr><td>${esc(a.id)}${a.location ? ' / ' + esc(a.location) : ''}${also(a) ? `<br><small>Also: ${esc(also(a))}</small>` : ''}</td>
         ${fields.map(f => `<td class="c">${val(f, a)}</td>`).join('')}
         <td class="c">${esc(a.condition)}</td><td class="c">${a.status ? `<span class="st-${a.status}">${cap(a.status)}</span>` : ''}</td></tr>
         ${a.comments && t.key !== 'sentinel' ? `<tr><td colspan="${cols}"><i>${nl(a.comments)}</i></td></tr>` : ''}`;
@@ -2619,7 +2811,7 @@
         const text = x.text.trim();
         if (!text) continue;
         const r = byText.get(text) || { text, assets: [], types: new Set(), priority: 'Low' };
-        r.assets.push(a); r.types.add(TYPE[a.type].label); r.priority = top(r.priority, x.priority || 'Medium');
+        r.assets.push(a); tagsOf(a).forEach(tk => r.types.add(TYPE[tk].label)); r.priority = top(r.priority, x.priority || 'Medium');
         byText.set(text, r);
       }
     }
@@ -2648,6 +2840,7 @@
     const none = t => `<p>There were no ${esc(t.noneText || t.reportTitle.replace(/ register$/i, '').toLowerCase())} identified within the inspected areas.</p>`;
 
     const sigCell = x => x?.sig ? `<img class="sig" src="${x.sig}">` : '';
+    $('report').className = '';
     $('report').innerHTML = `
       ${final || !SHOW_DRAFT_MARK ? '' : '<div class="draft-mark">DRAFT</div>'}
       <!-- ================= COVER ================= -->
@@ -2900,6 +3093,129 @@
   }
 
   // =====================================================================
+  // REMEDIAL ACTIONS – internal document for pricing remedial works (never issued to the client)
+  // =====================================================================
+  // Pulls together everything that needs doing: every remedial action (identical wording grouped with a
+  // quantity so it can be priced once), faults with no action against them yet (deadlegs, out-of-spec
+  // readings, poor condition), and site-wide recommendations from the survey questions.
+  const PRI_ORDER = { High: 0, Medium: 1, Low: 2 };
+  const topPri = (a, b) => PRI_ORDER[a] <= PRI_ORDER[b] ? a : b;
+  const assetWhere = a => `${a.id}${a.location ? ' (' + a.location + ')' : ''}`;
+
+  function remedialData() {
+    const byText = new Map();
+    for (const a of state.assets) {
+      for (const x of a.actions) {
+        const text = x.text.trim();
+        if (!text) continue;
+        const r = byText.get(text) || { text, assets: [], types: new Set(), priority: 'Low' };
+        if (!r.assets.includes(a)) r.assets.push(a);
+        tagsOf(a).forEach(tk => r.types.add(TYPE[tk].label));
+        r.priority = topPri(r.priority, x.priority || 'Medium');
+        byText.set(text, r);
+      }
+    }
+    const works = [...byText.values()].sort((x, y) => PRI_ORDER[x.priority] - PRI_ORDER[y.priority] || y.assets.length - x.assets.length);
+    const unactioned = faultsByAsset().filter(g => g.id === 'MAINS' || !findAsset(g.id)?.actions.some(x => x.text.trim()));
+    const sitewide = [];
+    for (const q of ALL_QS) {
+      if (q.type !== 'q') continue;
+      const v = state.survey[q.id], risk = state.surveyRisk[q.id];
+      if (!(isBad(q, v) || risk === 'Medium' || risk === 'High')) continue;
+      sitewide.push({ area: q.section.area || q.section.title, item: q.label, answer: v || '', priority: risk || 'Medium',
+                      text: (state.surveyNotes[q.id] || '').trim() || q.rec || '' });
+    }
+    sitewide.sort((x, y) => PRI_ORDER[x.priority] - PRI_ORDER[y.priority]);
+    const assets = state.assets.filter(a => a.actions.some(x => x.text.trim()) || assetFaults(a).length || a.status === 'fail' || a.status === 'monitor');
+    return { works, unactioned, sitewide, assets };
+  }
+
+  function generateRemedial() {
+    const d = remedialData(), s = state.survey;
+    const priCell = p => `<td class="pri p-${p}">${p}</td>`;
+    const count = p => d.works.filter(w => w.priority === p).length;
+    const addr = [s.site, s.addr1, s.addr2, s.town, s.county, s.postcode].filter(x => (x || '').trim()).map(esc).join(', ');
+    const nothing = t => `<p><i>${t}</i></p>`;
+    $('report').className = 'internal';
+    $('report').innerHTML = `
+      <h1>Remedial Actions</h1>
+      <p class="int-flag">INTERNAL – for quoting remedial works. Not for issue to the client.</p>
+      <table class="nob int-meta">
+        <tr><td><b>Site</b></td><td>${dash(addr)}</td></tr>
+        <tr><td><b>Client</b></td><td>${dash(S('client'))}</td></tr>
+        <tr><td><b>Survey date</b></td><td>${s.date ? fmtDate(s.date) : '—'}</td><td><b>Assessor</b></td><td>${dash(S('surveyor'))}</td></tr>
+        <tr><td><b>Assessment status</b></td><td>${esc(STATUS_LABEL[state.status] || state.status)}</td><td><b>Generated</b></td><td>${esc(fmtWhen(Date.now()))}</td></tr>
+      </table>
+      <p class="int-sum"><b>${d.works.length}</b> works item${d.works.length === 1 ? '' : 's'} across <b>${new Set(d.works.flatMap(w => w.assets)).size}</b> asset(s)
+        – High ${count('High')} · Medium ${count('Medium')} · Low ${count('Low')}.
+        <b>${d.unactioned.length}</b> asset(s) with faults but no action. <b>${d.sitewide.length}</b> site-wide recommendation(s).</p>
+
+      <h2>1. Works by action</h2>
+      ${d.works.length ? `<table><thead><tr><th>#</th><th>Action</th><th>Qty</th><th>Assets / locations</th><th>Priority</th></tr></thead><tbody>
+        ${d.works.map((w, i) => `<tr><td class="num">${i + 1}</td><td>${nl(w.text)}<div class="rec-assets">${esc([...w.types].join(' / '))}</div></td>
+          <td class="qty">${w.assets.length}</td><td>${w.assets.map(a => esc(assetWhere(a))).join('<br>')}</td>${priCell(w.priority)}</tr>`).join('')}
+      </tbody></table>` : nothing('No remedial actions recorded in the asset log.')}
+
+      <h2>2. Faults with no action recorded</h2>
+      <p>Found on site but no remedial action was written against them. Check whether works are needed before quoting.</p>
+      ${d.unactioned.length ? `<table><thead><tr><th style="width:12%">Asset</th><th style="width:22%">Location</th><th style="width:16%">Type</th><th>Faults</th></tr></thead><tbody>
+        ${d.unactioned.map(g => `<tr><td><b>${esc(g.id === 'MAINS' ? 'Mains' : g.id)}</b></td><td>${esc(g.location)}</td><td>${esc(g.type)}</td>
+          <td>${g.items.map(x => esc(faultText(x))).join('<br>')}</td></tr>`).join('')}
+      </tbody></table>` : nothing('None – every fault has an action against it.')}
+
+      <h2>3. Site-wide recommendations</h2>
+      <p>From the survey questions (management, records, systems). Usually priced as consultancy or programmed works, not per asset.</p>
+      ${d.sitewide.length ? `<table><thead><tr><th style="width:16%">Area</th><th style="width:30%">Item</th><th>Recommendation</th><th>Priority</th></tr></thead><tbody>
+        ${d.sitewide.map(r => `<tr><td>${esc(r.area)}</td><td>${esc(r.item)}${r.answer ? ` <b>(${esc(r.answer)})</b>` : ''}</td><td>${nl(r.text) || '<i>No recommendation written</i>'}</td>${priCell(r.priority)}</tr>`).join('')}
+      </tbody></table>` : nothing('None.')}
+
+      <h2 class="pb">4. Asset detail</h2>
+      ${d.assets.length ? d.assets.map(a => {
+        const faults = assetFaults(a);
+        return `<div class="int-asset">
+          <h3>${esc(a.id)} – ${esc(tagLabels(a))}${a.location ? ' – ' + esc(a.location) : ''}</h3>
+          <table><tbody>
+            <tr><td class="ik">Condition / status</td><td>${esc(a.condition || '—')} / ${a.status ? `<span class="st-${a.status}">${cap(a.status)}</span>` : '—'}</td></tr>
+            ${faults.length ? `<tr><td class="ik">Faults</td><td>${faults.map(x => esc(faultText(x))).join('<br>')}</td></tr>` : ''}
+            ${a.actions.some(x => x.text.trim()) ? `<tr><td class="ik">Actions</td><td>${a.actions.filter(x => x.text.trim()).map(x => `<span class="r-${x.priority}">[${esc(x.priority)}]</span> ${nl(x.text)}`).join('<br>')}</td></tr>` : ''}
+            ${a.comments ? `<tr><td class="ik">Comments</td><td>${nl(a.comments)}</td></tr>` : ''}
+          </tbody></table>
+          ${a.photos.length ? `<div class="int-photos">${a.photos.map(p => `<img src="${p}">`).join('')}</div>` : ''}
+        </div>`;
+      }).join('') : nothing('No assets need action.')}`;
+
+    const prevTitle = document.title;
+    document.title = fileStem() + '_Remedial-actions';   // default PDF filename
+    setTimeout(() => { window.print(); document.title = prevTitle; }, 300);
+  }
+  $('remedialBtn').addEventListener('click', generateRemedial);
+
+  // Spreadsheet (CSV – opens in Excel) of the same content, with blank Rate / Total columns for pricing.
+  function exportRemedialCSV() {
+    const d = remedialData();
+    const cell = v => {
+      let t = String(v ?? '');
+      if (/^[=+\-@]/.test(t)) t = ' ' + t;   // stop Excel reading text as a formula
+      return `"${t.replace(/"/g, '""')}"`;
+    };
+    const rows = [['Section', 'Action / item', 'Priority', 'Qty', 'Asset IDs', 'Locations', 'Asset types', 'Rate (£)', 'Total (£)']];
+    for (const w of d.works) rows.push(['Works', w.text, w.priority, w.assets.length, w.assets.map(a => a.id).join('; '),
+      w.assets.map(a => a.location || '').join('; '), [...w.types].join(' / '), '', '']);
+    for (const g of d.unactioned) rows.push(['Fault – no action', g.items.map(faultText).join('; '), '', 1,
+      g.id === 'MAINS' ? 'Mains' : g.id, g.location, g.type, '', '']);
+    for (const r of d.sitewide) rows.push(['Site-wide', `${r.item}${r.answer ? ` (${r.answer})` : ''}: ${r.text}`, r.priority, 1, '', '', r.area, '', '']);
+    const csv = '\ufeff' + rows.map(r => r.map(cell).join(',')).join('\r\n');   // BOM so Excel reads £ and °C
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+    link.download = fileStem() + '_Remedial-actions.csv';
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+  }
+  $('remedialCsvBtn').addEventListener('click', exportRemedialCSV);
+
+  // =====================================================================
   // TRAINING EXAMPLES – 10 realistic dummy assessments for teaching surveyors
   // =====================================================================
   // Each example is a compact description; buildTraining() turns it into a full assessment using the
@@ -2932,13 +3248,16 @@
     Object.assign(st.surveyNotes, sp.notes || {});
     Object.assign(st.surveyRisk, sp.risks || {});
     for (const [type, location, fields, extra = {}] of sp.assets) {
-      const t = TYPE[type];
-      const k = (st.counters[type] || 0) + 1; st.counters[type] = k;
-      const a = { id: `${t.prefix}-${String(k).padStart(3, '0')}`, type, location, condition: extra.cond || 'Good', status: extra.status || 'pass',
-                  comments: extra.comments || t.comment, actions: [], photos: [] };
-      t.fields.forEach(f => { a[f.key] = fields[f.key] == null ? '' : String(fields[f.key]); });
+      const tags = type.split('+');                     // e.g. 'sentinel+deadleg' – one asset, two registers
+      const t = TYPE[tags[0]];
+      const k = (st.counters[t.key] || 0) + 1; st.counters[t.key] = k;
+      const a = { id: `${t.prefix}-${String(k).padStart(3, '0')}`, tags: [t.key], type: t.key, location, condition: extra.cond || 'Good', status: extra.status || 'pass',
+                  comments: t.comment, actions: [], photos: [] };
+      tags.slice(1).forEach(tk => addTag(a, tk));
+      if (extra.comments) a.comments = extra.comments;
+      for (const tk of tags) TYPE[tk].fields.forEach(f => setFv(a, tk, f.key, fields[f.key] == null ? '' : String(fields[f.key])));
       for (const want of extra.actions || []) {
-        const hit = [...(t.actions || []), ...COMMON_ACTIONS].find(([txt]) => txt.toLowerCase().startsWith(want.toLowerCase()));
+        const hit = [...tags.flatMap(tk => TYPE[tk].actions || []), ...COMMON_ACTIONS].find(([txt]) => txt.toLowerCase().startsWith(want.toLowerCase()));
         if (!hit) console.warn('Training: no quick action starting', want, 'for', type);
         a.actions.push({ text: hit ? hit[0] : want, priority: extra.pri?.[want] || (hit ? hit[1] : 'Medium') });
       }
@@ -3068,9 +3387,8 @@ Latency-sensitive; begin your visible answer immediately.`;
       if (Object.keys(out).length) survey[sec.title] = out;
     }
     const assets = state.assets.map(a => {
-      const t = TYPE[a.type];
-      const o = { id: a.id, type: t.label, location: a.location, condition: a.condition, status: a.status };
-      t.fields.forEach(f => { if (a[f.key] !== '') o[f.label] = a[f.key]; });
+      const o = { id: a.id, type: tagLabels(a), location: a.location, condition: a.condition, status: a.status };
+      for (const tk of tagsOf(a)) TYPE[tk].fields.forEach(f => { const v = fv(a, tk, f.key); if (v !== '') o[f.label] = v; });
       Object.assign(o, { comments: a.comments, remedialActions: a.actions.map(x => `[${x.priority}] ${x.text}`), photos: a.photos.length });
       return o;
     });
