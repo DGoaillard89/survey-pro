@@ -1,7 +1,7 @@
 // Survey Pro – offline support.
 // Keeps a copy of the app on the device so it opens and works with no signal (e.g. in plant rooms).
 // Assessments themselves are saved on the device by the app and synced when back online.
-const CACHE = 'surveypro-20261124122524';
+const CACHE = 'surveypro-20261125142346';
 const CORE = ['./', './index.html', './training-examples.js', './manifest.webmanifest', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', e => {

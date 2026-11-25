@@ -1038,6 +1038,54 @@
         ['Add outlet to the monthly sentinel monitoring regime', 'Low'],
       ] },
 
+    // Sinks and wash hand basins share the sentinel's floor / temperature / TMV / WRAS checks (identical definitions),
+    // so an outlet tagged e.g. WHB + Sentinel outlet only has its temperatures entered once.
+    // optional: the report only shows these registers when at least one is logged (they are not on Form WH025).
+    { key: 'sink', req: 'Hot ≥50 °C within 1 min (55 °C healthcare), cold <20 °C within 2 min. Used at least weekly or flushed weekly and recorded. Outlets and aerators kept clean and free of scale.', label: 'Sink', reportTitle: 'Sinks', noneText: 'sinks', prefix: 'SK', groupBy: 'floor', optional: true,
+      fields: [
+        { key: 'floor',      label: 'Floor', type: 'text', list: 'floorList' },
+        { key: 'sinkType',   label: 'Sink type', type: 'select', options: ['Kitchen', 'Tea point', "Cleaner's / Belfast", 'Utility', 'Laboratory', 'Hand wash', 'Other'] },
+        { key: 'tapType',    label: 'Tap type', type: 'select', options: ['Separate hot & cold', 'Mixer tap', 'Cold only', 'Spray / pull-out', 'Boiling / chilled tap', 'Other'] },
+        { key: 'tmvFitted',  label: 'TMV fitted?', type: 'select', options: YN },
+        { key: 'wras', bad: ['No'], fault: 'non-WRAS fitting',       label: 'WRAS approved?', type: 'select', options: YN },
+        { key: 'hot',        label: 'Hot °C (1 min)', type: 'number', min: 50 },
+        { key: 'cold',       label: 'Cold °C (2 min)', type: 'number', below: 20 },
+        { key: 'aerator',    label: 'Aerator / flow straightener fitted?', type: 'select', options: YN },
+        { key: 'usage', bad: ['Nil'], fault: 'outlet not used – stagnation',      label: 'Usage', type: 'select', options: USAGE },
+        { key: 'scale', bad: ['Heavy'], fault: 'heavy scale',      label: 'Scale on outlet', type: 'select', options: ['None', 'Light', 'Heavy'] },
+      ],
+      comment: 'Sink outlet inspected and temperatures recorded.',
+      remedial: 'Investigate cause of out-of-range temperature at the sink (circulation, balancing, insulation or heat gain). Re-test after rectification and record in the logbook.',
+      actions: [
+        ['Descale and disinfect the sink tap / aerator', 'Low'],
+        ['Investigate sink hot water not reaching specification and re-test', 'Medium'],
+        ['Investigate sink cold water not reaching specification (heat gain / insulation) and re-test', 'Medium'],
+        ['Remove aerator / flow straightener', 'Low'],
+        ['Replace non-WRAS approved tap / fitting', 'Low'],
+        ['Add sink to the weekly flushing regime and record in the logbook', 'Medium'],
+      ] },
+    { key: 'whb', req: 'Hot ≥50 °C within 1 min at the tap (55 °C healthcare), cold <20 °C within 2 min. Where a TMV is fitted, mixed water 41 °C (38–43 °C). Used at least weekly or flushed weekly and recorded.', label: 'WHB', reportTitle: 'Wash hand basins', noneText: 'wash hand basins', prefix: 'WHB', groupBy: 'floor', optional: true,
+      fields: [
+        { key: 'floor',      label: 'Floor', type: 'text', list: 'floorList' },
+        { key: 'whbTap',     label: 'Tap type', type: 'select', options: ['Separate hot & cold', 'Mixer tap', 'Sensor / infra-red', 'Push-top / timed', 'Lever (clinical)', 'Cold only', 'Other'] },
+        { key: 'tmvFitted',  label: 'TMV fitted?', type: 'select', options: YN },
+        { key: 'wras', bad: ['No'], fault: 'non-WRAS fitting',       label: 'WRAS approved?', type: 'select', options: YN },
+        { key: 'hot',        label: 'Hot °C (1 min)', type: 'number', min: 50 },
+        { key: 'cold',       label: 'Cold °C (2 min)', type: 'number', below: 20 },
+        { key: 'aerator',    label: 'Aerator / flow straightener fitted?', type: 'select', options: YN },
+        { key: 'usage', bad: ['Nil'], fault: 'outlet not used – stagnation',      label: 'Usage', type: 'select', options: USAGE },
+        { key: 'scale', bad: ['Heavy'], fault: 'heavy scale',      label: 'Scale on outlet', type: 'select', options: ['None', 'Light', 'Heavy'] },
+      ],
+      comment: 'Wash hand basin inspected and temperatures recorded.',
+      remedial: 'Investigate cause of out-of-range temperature at the wash hand basin (circulation, balancing, TMV setting, insulation or heat gain). Re-test after rectification and record in the logbook.',
+      actions: [
+        ['Descale and disinfect the basin tap / aerator', 'Low'],
+        ['Investigate basin hot water not reaching specification and re-test', 'Medium'],
+        ['Investigate basin cold water not reaching specification (heat gain / insulation) and re-test', 'Medium'],
+        ['Remove aerator / flow straightener', 'Low'],
+        ['Replace non-WRAS approved tap / fitting', 'Low'],
+        ['Add basin to the weekly flushing regime and record in the logbook', 'Medium'],
+      ] },
     { key: 'tank', req: 'Stored water <20 °C and no more than 2 °C above the incoming mains. Close-fitting lid, screened vent and overflow, insulated, inlet and outlet remote. Inspect annually, check temperatures six-monthly.', label: 'Cold water tank', reportTitle: 'Cold water storage tanks', prefix: 'CWST', vertical: true,
       fields: [
         { key: 'safeAccess', bad: ['No'], fault: 'no safe access',  label: 'Is there safe working access?', type: 'select', options: YN },
@@ -1186,46 +1234,50 @@
 
   // ---- Tags: one asset can carry several types (e.g. a sentinel outlet that is also a deadleg) ----
   // a.tags lists the types; a.type mirrors the first tag (it sets the ID prefix, and older versions of the app read it).
-  // Checks defined identically on several types are shared – e.g. "Hot °C (1 min)" on a sentinel and a
-  // little-used outlet is entered once. Keys that mean different things on different types (temp1 is
-  // "Hot supply" on a TMV but "Initial temp" on an outside tap) are kept separately for the extra tags.
+  // Two tags on the same asset share a check when they define it identically – e.g. "Hot °C (1 min)" or
+  // "Usage" on a WHB that is also a sentinel is entered once. The check belongs to the first such tag ("owner").
+  // Where the definitions differ (temp1 is "Hot supply" on a TMV but "Initial temp" on an outside tap)
+  // each tag keeps its own value.
+  // Storage: keys defined the same way on every type are always stored flat (a[key]). Keys that differ
+  // between types (SPLIT) are stored flat when owned by the first tag, otherwise in a.f[owner][key].
+  const FSIG = {};   // 'type.key' -> definition, for comparing
+  for (const t of ASSET_TYPES) for (const f of t.fields) FSIG[`${t.key}.${f.key}`] = JSON.stringify(f);
   const SPLIT = (() => {
     const m = {};
-    for (const t of ASSET_TYPES) for (const f of t.fields) (m[f.key] ??= new Set()).add(JSON.stringify(f));
+    for (const t of ASSET_TYPES) for (const f of t.fields) (m[f.key] ??= new Set()).add(FSIG[`${t.key}.${f.key}`]);
     return new Set(Object.keys(m).filter(k => m[k].size > 1));
   })();
   const tagsOf = a => a.tags?.length ? a.tags : [a.type];
   const hasTag = (a, tk) => tagsOf(a).includes(tk);
-  const ownSlot = (a, tk, k) => SPLIT.has(k) && tk !== tagsOf(a)[0];
-  const fv = (a, tk, k) => (ownSlot(a, tk, k) ? a.f?.[tk]?.[k] : a[k]) ?? '';
+  const sameCheck = (t1, t2, k) => FSIG[`${t1}.${k}`] !== undefined && FSIG[`${t1}.${k}`] === FSIG[`${t2}.${k}`];
+  const checkOwner = (a, tk, k) => tagsOf(a).find(o => sameCheck(o, tk, k)) || tk;
+  const slotOf = (a, tk, k) => { const o = checkOwner(a, tk, k); return !SPLIT.has(k) || o === tagsOf(a)[0] ? null : o; };
+  const fv = (a, tk, k) => { const o = slotOf(a, tk, k); return (o ? a.f?.[o]?.[k] : a[k]) ?? ''; };
   function setFv(a, tk, k, v) {
-    if (ownSlot(a, tk, k)) ((a.f ??= {})[tk] ??= {})[k] = v;
+    const o = slotOf(a, tk, k);
+    if (o) ((a.f ??= {})[o] ??= {})[k] = v;
     else a[k] = v;
   }
   const tagLabels = a => tagsOf(a).map(tk => TYPE[tk].label).join(' + ');
+  // Change the tag list, keeping every remaining tag's readings (owners and slots may move).
+  function retag(a, tags) {
+    const vals = tags.filter(tk => hasTag(a, tk)).flatMap(tk => TYPE[tk].fields.map(f => [tk, f.key, fv(a, tk, f.key)]));
+    a.tags = tags; a.type = tags[0]; a.f = {};
+    for (const [tk, k, v] of vals) if (v !== '' || checkOwner(a, tk, k) === tk) setFv(a, tk, k, v);
+  }
   function addTag(a, tk) {
-    a.tags = [...tagsOf(a), tk]; a.type = a.tags[0];
+    retag(a, [...tagsOf(a), tk]);
     const c = TYPE[tk].comment;
     if (c && !(a.comments || '').includes(c)) a.comments = (a.comments || '').trim() ? a.comments.trim() + '\n\n' + c : c;
   }
   function removeTag(a, tk) {
-    const tags = tagsOf(a);
-    if (tk === tags[0] && tags[1]) {
-      // The next tag becomes the main one: its own copies of split checks move into the main slots.
-      const next = tags[1];
-      for (const f of TYPE[next].fields) if (SPLIT.has(f.key)) a[f.key] = a.f?.[next]?.[f.key] ?? '';
-      if (a.f) delete a.f[next];
-    }
-    if (a.f) delete a.f[tk];
-    a.tags = tags.filter(x => x !== tk); a.type = a.tags[0];
+    retag(a, tagsOf(a).filter(x => x !== tk));
     const c = TYPE[tk].comment;
     if (c && a.comments) a.comments = a.comments.replace(c, '').replace(/\n{3,}/g, '\n\n').trim();
   }
-  // True when the tag holds readings no other tag on the asset shares (so removing it loses them).
-  function tagHasData(a, tk) {
-    const sharedWithOther = f => !SPLIT.has(f.key) && tagsOf(a).some(o => o !== tk && TYPE[o].fields.some(g => g.key === f.key));
-    return TYPE[tk].fields.some(f => fv(a, tk, f.key) !== '' && !sharedWithOther(f));
-  }
+  // True when the tag holds readings that no other tag on the asset shares (so removing it loses them).
+  const tagHasData = (a, tk) => TYPE[tk].fields.some(f =>
+    fv(a, tk, f.key) !== '' && !tagsOf(a).some(o => o !== tk && sameCheck(o, tk, f.key)));
   const STATUSES = ['pass', 'fail', 'monitor'];
   const CONDITIONS = ['Good', 'Fair', 'Poor'];
   const RISKS = ['Low', 'Medium', 'High'];
@@ -1241,7 +1293,7 @@
       task: () => `Check that the storage temperature of the hot water in ${ids('calorifier')} is maintained as close to 60 °C as possible, without going below 60 °C. Record stored water temperature.` },
     { freq: 'Monthly*', service: 'Cold water services', when: () => true,
       task: 'Check that temperature of the cold water is below 20 °C after running the water for up to two minutes in the sentinel taps.' },
-    { freq: 'Monthly*', service: 'Hot water services', when: () => has('calorifier') || has('pou') || has('sentinel') || has('tmv'),
+    { freq: 'Monthly*', service: 'Hot water services', when: () => has('calorifier') || has('pou') || has('sentinel') || has('tmv') || has('sink') || has('whb'),
       task: 'Check that temperature of the hot water (or input to TMV) is above 50 °C after running the water for up to one minute in the sentinel taps.' },
     { freq: 'Monthly', service: 'Hot water services', when: () => has('recirc'),
       task: 'Check hot water return temperatures are maintained above 50 °C. Record actions.' },
@@ -1339,6 +1391,11 @@
     for (const k in s.survey) if (old[s.survey[k]]) s.survey[k] = old[s.survey[k]];
     s.assets.forEach(a => { a.tags = (a.tags?.length ? a.tags : [a.type]).filter(tk => TYPE[tk]); a.type = a.tags[0]; });
     s.assets = s.assets.filter(a => a.tags.length);
+    s.assets.forEach(a => {   // earlier tag version stored every split check per tag – move to the shared owner
+      if (!a.f) return;
+      for (const tk of Object.keys(a.f)) for (const [k, v] of Object.entries(a.f[tk] || {}))
+        if (v !== '' && hasTag(a, tk) && fv(a, tk, k) === '') setFv(a, tk, k, v);
+    });
     s.assets.forEach(a => {
       a.photos ??= []; a.comments ??= '';
       if (!Array.isArray(a.actions)) {   // older versions had one remedial text box + priority
@@ -1673,12 +1730,12 @@
   };
   // All faults on one asset: out-of-spec readings, non-compliant answers, poor condition.
   function assetFaults(a) {
-    const out = [], seen = new Set();
+    const out = [];
     for (const tk of tagsOf(a)) {
       const t = TYPE[tk];
       if (t.alwaysFault) out.push({ item: t.label, value: 'Present', req: t.alwaysFault });
       for (const f of t.fields) {
-        if (!SPLIT.has(f.key)) { if (seen.has(f.key)) continue; seen.add(f.key); }   // shared check – count once
+        if (checkOwner(a, tk, f.key) !== tk) continue;   // shared check – counted under the tag that owns it
         const v = fv(a, tk, f.key), r = fieldFault(f, v);
         if (r) out.push({ item: shortLabel(f.label), value: v + (f.type === 'number' ? unitOf(f) : ''),
                           spec: f.type === 'number' ? r.replace(/^should be /, '') : '', req: r });
@@ -2175,7 +2232,7 @@
   // Auto answers update as assets change; once the assessor taps an answer themselves, theirs is kept.
   const typed = (type, key) => state.assets.filter(a => hasTag(a, type)).map(a => fv(a, type, key)).filter(v => v !== '' && v != null);
   const allOrAny = (vals, ok) => !vals.length ? null : vals.every(ok) ? 'Yes' : 'No';
-  const hotTemps = () => [...typed('sentinel', 'hot'), ...typed('littleUsed', 'hot'), ...typed('pou', 'outlet')].map(Number);
+  const hotTemps = () => [...typed('sentinel', 'hot'), ...typed('littleUsed', 'hot'), ...typed('sink', 'hot'), ...typed('whb', 'hot'), ...typed('pou', 'outlet')].map(Number);
   const AUTO_RULES = {
     tmvFitted:       () => has('tmv') ? 'Yes' : 'No',
     tmvSentinel:     () => has('tmv') ? null : 'N/A',
@@ -2470,11 +2527,9 @@
       </div>`;
     if (!open) return `<div class="row collapsed" data-id="${esc(a.id)}" data-status="${esc(a.status)}">${head}</div>`;
     // One block of checks per tag; a check shared by two tags is shown once, under the first.
-    const shown = new Set();
     const blocks = tagsOf(a).map(tk => {
       const t = TYPE[tk];
-      const fields = t.fields.filter(f => SPLIT.has(f.key) || !shown.has(f.key));
-      fields.forEach(f => shown.add(f.key));
+      const fields = t.fields.filter(f => checkOwner(a, tk, f.key) === tk);
       return `<div class="tag-block"><h3>${esc(t.label)} checks</h3>
         <details class="req"><summary>Requirements</summary>${esc(t.req || '')}</details>
         ${fields.length ? `<div class="grid">${fields.map(f => fieldHTML(a, f, tk)).join('')}</div>` : '<p class="empty">Uses the same checks as above.</p>'}
@@ -3000,7 +3055,7 @@
         <tr><td class="k">Materials comply with Water Supply Regs 1999</td><td>${S('mainsWSR')}</td></tr>
         <tr><td class="k">Presence of dead leg/ends / low use outlets</td><td>${S('mainsDeadlegs')}</td></tr>
       </tbody></table>
-      ${ASSET_TYPES.map(t => `<h3>${esc(t.reportTitle)}</h3>${has(t.key) ? `<p class="req-line"><b>Requirement:</b> ${esc(t.req || '')}</p>` + assetTable(t) : none(t)}`).join('')}
+      ${ASSET_TYPES.filter(t => !t.optional || has(t.key)).map(t => `<h3>${esc(t.reportTitle)}</h3>${has(t.key) ? `<p class="req-line"><b>Requirement:</b> ${esc(t.req || '')}</p>` + assetTable(t) : none(t)}`).join('')}
 
       <h3>4.1 Fault Log</h3>
       <p>Readings and observations recorded outside specification, for reference (required value in brackets). Actions are set out in section 7.</p>
